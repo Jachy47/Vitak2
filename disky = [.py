@@ -8,6 +8,7 @@ ceny = [1100, 1900, 1700,
         1200, 1150, 980]
 
 # Vytvoření grafu
+
 plt.figure(figsize=(10, 5))
 plt.bar(typy, ceny, color=["#4CAF50", "#4CAF50", "#4CAF50", "#2196F3", "#2196F3", "#2196F3"])
 
