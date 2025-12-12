@@ -1,0 +1,58 @@
+from ColabTurtle.Turtle import *
+import random
+
+initializeTurtle(initial_speed=13)
+width(3)
+
+# Get start position
+start_x, start_y = pos()
+
+# Bright multi-color palette
+colors = [
+    "red", "orange", "yellow", "green", "cyan",
+    "blue", "purple", "magenta", "pink",
+    "gold", "turquoise", "lime", "violet"
+]
+
+# ---------- FAST CIRCLE FUNCTION ----------
+def circle(radius):
+    steps = 12  # SUPER FAST
+    for _ in range(steps):
+        forward(2 * 3.1415 * radius / steps)
+        right(360 / steps)
+
+# ---------- SPIRO-FLOWER -----------
+rings = 4
+circles_per_ring = 36
+radius = 40
+
+for r in range(rings):
+    for i in range(circles_per_ring):
+        color(colors[(i + r * 3) % len(colors)])
+        circle(radius)
+        right(360 / circles_per_ring)
+    radius -= 7
+
+# ---------- WHITE DOT STARS ----------
+num_stars = 900
+star_radius = 200
+
+penup()
+color("white")
+width(5)  # “dot” size
+
+for _ in range(num_stars):
+    angle = random.randint(0, 420)
+    distance = star_radius + random.randint(-40, 40)
+
+    # Move to center
+    goto(start_x, start_y)
+    setheading(angle)
+    forward(distance)
+
+    # Draw a small dot manually
+    pendown()
+    forward(1)   # tiny line acts as dot
+    penup()
+
+hideturtle()
