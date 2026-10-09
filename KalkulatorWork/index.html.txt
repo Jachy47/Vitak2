@@ -1,0 +1,497 @@
+<!DOCTYPE html>
+<html lang="cs" class="h-full">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Moderní Stylová Kalkulačka</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Google Fonts Inter -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <!-- FontAwesome for icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                    },
+                }
+            }
+        }
+    </script>
+    <style>
+        /* Custom scrollbar and glassmorphism fine-tuning */
+        ::-webkit-scrollbar {
+            width: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 8px;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 8px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: rgba(255, 255, 255, 0.4);
+        }
+        .glass-panel {
+            background: rgba(255, 255, 255, 0.07);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid rgba(255, 255, 255, 0.12);
+        }
+        .btn-glass {
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            transition: all 0.2s ease;
+        }
+        .btn-glass:hover {
+            background: rgba(255, 255, 255, 0.15);
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px -10px rgba(0,0,0,0.3);
+        }
+        .btn-glass:active {
+            transform: translateY(0);
+        }
+    </style>
+</head>
+<body class="h-full bg-gradient-to-br from-slate-900 via-indigo-950 to-slate-900 text-slate-100 flex flex-col justify-between font-sans selection:bg-indigo-500 selection:text-white">
+
+    <header class="w-full py-4 px-6 glass-panel border-b border-white/10 flex justify-between items-center z-10">
+        <div class="flex items-center space-x-3">
+            <div class="bg-indigo-600 p-2.5 rounded-xl shadow-lg shadow-indigo-500/30 flex items-center justify-center">
+                <i class="fa-solid fa-calculator text-white text-lg"></i>
+            </div>
+            <div>
+                <h1 class="font-bold text-lg tracking-tight bg-gradient-to-r from-white via-indigo-200 to-indigo-400 bg-clip-text text-transparent">ProCalc 365</h1>
+                <p class="text-xs text-slate-400">Moderní webová kalkulačka</p>
+            </div>
+        </div>
+        <div class="flex items-center space-x-3">
+            <button onclick="toggleHistory()" class="btn-glass px-4 py-2 rounded-xl text-sm font-medium flex items-center space-x-2 text-indigo-300 hover:text-white">
+                <i class="fa-solid fa-clock-rotate-left"></i>
+                <span class="hidden sm:inline">Historie</span>
+            </button>
+            <button onclick="toggleModal('githubModal')" class="btn-glass px-4 py-2 rounded-xl text-sm font-medium flex items-center space-x-2 text-emerald-300 hover:text-white">
+                <i class="fa-brands fa-github"></i>
+                <span class="hidden sm:inline">GitHub Návod</span>
+            </button>
+        </div>
+    </header>
+
+    <main class="flex-grow flex items-center justify-center p-4 sm:p-6 relative overflow-hidden">
+        <!-- Background ambient glow circles -->
+        <div class="absolute -top-32 -left-32 w-96 h-96 bg-indigo-600/20 rounded-full blur-3xl pointer-events-none"></div>
+        <div class="absolute -bottom-32 -right-32 w-96 h-96 bg-purple-600/20 rounded-full blur-3xl pointer-events-none"></div>
+
+        <div class="w-full max-w-md glass-panel rounded-3xl p-6 shadow-2xl relative z-10 flex flex-col space-y-5">
+            
+            <!-- Display Screen -->
+            <div class="bg-slate-950/60 border border-white/10 rounded-2xl p-4 flex flex-col justify-end text-right min-h-[110px] shadow-inner">
+                <div id="operationHistory" class="text-xs text-slate-400 font-mono tracking-wider min-h-[18px] overflow-x-auto whitespace-nowrap"></div>
+                <div id="mainDisplay" class="text-3xl sm:text-4xl font-semibold text-white tracking-tight overflow-x-auto whitespace-nowrap mt-1">0</div>
+                <!-- Memory Indicator -->
+                <div class="flex items-center justify-between mt-2 pt-2 border-t border-white/5 text-[11px] text-slate-400 font-mono">
+                    <div>Paměť (M): <span id="memoryIndicator" class="text-indigo-400 font-bold">0</span></div>
+                    <div id="statusIndicator" class="text-emerald-400">Připraveno</div>
+                </div>
+            </div>
+
+            <!-- Memory Actions Row -->
+            <div class="grid grid-cols-4 gap-2">
+                <button onclick="memoryClear()" class="btn-glass py-2 rounded-xl text-xs font-semibold text-indigo-300">MC</button>
+                <button onclick="memoryRecall()" class="btn-glass py-2 rounded-xl text-xs font-semibold text-indigo-300">MR</button>
+                <button onclick="memoryAdd()" class="btn-glass py-2 rounded-xl text-xs font-semibold text-indigo-300">M+</button>
+                <button onclick="memorySubtract()" class="btn-glass py-2 rounded-xl text-xs font-semibold text-indigo-300">M-</button>
+            </div>
+
+            <!-- Main Keypad Grid -->
+            <div class="grid grid-cols-4 gap-2.5">
+                <!-- Row 1 -->
+                <button onclick="clearAll()" class="btn-glass py-3.5 rounded-2xl font-semibold text-rose-400 hover:text-rose-300">AC</button>
+                <button onclick="deleteDigit()" class="btn-glass py-3.5 rounded-2xl font-semibold text-amber-400 hover:text-amber-300"><i class="fa-solid fa-delete-left"></i></button>
+                <button onclick="appendOperator('%')" class="btn-glass py-3.5 rounded-2xl font-semibold text-indigo-300">%</button>
+                <button onclick="appendOperator('/')" class="btn-glass py-3.5 rounded-2xl font-semibold bg-indigo-600/30 text-indigo-200 border-indigo-500/30 hover:bg-indigo-600/50">÷</button>
+                
+                <!-- Row 2 -->
+                <button onclick="appendNumber('7')" class="btn-glass py-3.5 rounded-2xl font-medium text-white">7</button>
+                <button onclick="appendNumber('8')" class="btn-glass py-3.5 rounded-2xl font-medium text-white">8</button>
+                <button onclick="appendNumber('9')" class="btn-glass py-3.5 rounded-2xl font-medium text-white">9</button>
+                <button onclick="appendOperator('*')" class="btn-glass py-3.5 rounded-2xl font-semibold bg-indigo-600/30 text-indigo-200 border-indigo-500/30 hover:bg-indigo-600/50">×</button>
+
+                <!-- Row 3 -->
+                <button onclick="appendNumber('4')" class="btn-glass py-3.5 rounded-2xl font-medium text-white">4</button>
+                <button onclick="appendNumber('5')" class="btn-glass py-3.5 rounded-2xl font-medium text-white">5</button>
+                <button onclick="appendNumber('6')" class="btn-glass py-3.5 rounded-2xl font-medium text-white">6</button>
+                <button onclick="appendOperator('-')" class="btn-glass py-3.5 rounded-2xl font-semibold bg-indigo-600/30 text-indigo-200 border-indigo-500/30 hover:bg-indigo-600/50">-</button>
+
+                <!-- Row 4 -->
+                <button onclick="appendNumber('1')" class="btn-glass py-3.5 rounded-2xl font-medium text-white">1</button>
+                <button onclick="appendNumber('2')" class="btn-glass py-3.5 rounded-2xl font-medium text-white">2</button>
+                <button onclick="appendNumber('3')" class="btn-glass py-3.5 rounded-2xl font-medium text-white">3</button>
+                <button onclick="appendOperator('+')" class="btn-glass py-3.5 rounded-2xl font-semibold bg-indigo-600/30 text-indigo-200 border-indigo-500/30 hover:bg-indigo-600/50">+</button>
+
+                <!-- Row 5: Advanced & Zero -->
+                <button onclick="calculateSquareRoot()" class="btn-glass py-3.5 rounded-2xl font-semibold text-indigo-300">√</button>
+                <button onclick="appendNumber('0')" class="btn-glass py-3.5 rounded-2xl font-medium text-white">0</button>
+                <button onclick="appendDecimal('.')" class="btn-glass py-3.5 rounded-2xl font-semibold text-white">.</button>
+                <button onclick="calculateResult()" class="py-3.5 rounded-2xl font-semibold bg-gradient-to-r from-indigo-600 to-purple-600 text-white shadow-lg shadow-indigo-600/40 hover:from-indigo-500 hover:to-purple-500 transition-all">=</button>
+            </div>
+
+            <!-- Extra scientific button row -->
+            <div class="grid grid-cols-2 gap-2">
+                <button onclick="calculatePower()" class="btn-glass py-2.5 rounded-xl text-xs font-medium text-indigo-300">x² (Mocnina)</button>
+                <button onclick="toggleSign()" class="btn-glass py-2.5 rounded-xl text-xs font-medium text-indigo-300">+/- (Změna znaménka)</button>
+            </div>
+
+        </div>
+
+        <div id="historyDrawer" class="absolute top-0 right-0 h-full w-80 glass-panel border-l border-white/10 shadow-2xl z-20 transform translate-x-full transition-transform duration-300 flex flex-col">
+            <div class="p-4 border-b border-white/10 flex justify-between items-center">
+                <h3 class="font-bold text-sm flex items-center space-x-2">
+                    <i class="fa-solid fa-history text-indigo-400"></i>
+                    <span>Historie výpočtů</span>
+                </h3>
+                <div class="flex items-center space-x-2">
+                    <button onclick="clearHistory()" class="text-xs text-rose-400 hover:text-rose-300 px-2 py-1 rounded bg-rose-500/10"><i class="fa-solid fa-trash"></i></button>
+                    <button onclick="toggleHistory()" class="text-slate-400 hover:text-white px-2 py-1"><i class="fa-solid fa-xmark"></i></button>
+                </div>
+            </div>
+            <div id="historyList" class="flex-grow overflow-y-auto p-4 space-y-3 text-sm">
+                <!-- Dynamic history entries will be injected here -->
+                <div class="text-center text-slate-500 text-xs py-8">Zatím žádná historie výpočtů.</div>
+            </div>
+        </div>
+
+    </main>
+
+    <div id="githubModal" class="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+        <div class="glass-panel w-full max-w-lg rounded-3xl p-6 shadow-2xl border border-white/20 relative max-h-[90vh] overflow-y-auto">
+            <div class="flex justify-between items-center pb-4 border-b border-white/10 mb-4">
+                <div class="flex items-center space-x-3">
+                    <div class="bg-emerald-600/20 text-emerald-400 p-2 rounded-xl">
+                        <i class="fa-brands fa-github text-xl"></i>
+                    </div>
+                    <h3 class="font-bold text-lg">Jak nahrát aplikaci na GitHub Pages</h3>
+                </div>
+                <button onclick="toggleModal('githubModal')" class="text-slate-400 hover:text-white p-2"><i class="fa-solid fa-xmark text-lg"></i></button>
+            </div>
+            
+            <div class="space-y-4 text-sm text-slate-300 leading-relaxed">
+                <div class="bg-indigo-950/40 p-3.5 rounded-xl border border-indigo-500/20 text-indigo-200">
+                    <p class="font-semibold mb-1"><i class="fa-solid fa-circle-info mr-1.5"></i> Co je potřeba?</p>
+                    Tento jediný soubor (<code class="bg-black/30 px-1.5 py-0.5 rounded text-xs font-mono text-indigo-300">calculator.html</code>) stačí přejmenovat na <code class="bg-black/30 px-1.5 py-0.5 rounded text-xs font-mono text-indigo-300">index.html</code> a nahrát do Vašeho GitHub repozitáře.
+                </div>
+
+                <ol class="list-decimal list-inside space-y-2.5 font-medium">
+                    <li>Přihlaste se na <a href="https://github.com" target="_blank" class="text-indigo-400 underline">GitHub.com</a> a vytvořte nový veřejný repozitář (např. <code class="text-xs bg-white/10 px-1 rounded">modern-calculator</code>).</li>
+                    <li>Uložte tento kód do souboru s názvem <strong class="text-white">index.html</strong>.</li>
+                    <li>Nahrajte soubor <code class="text-xs bg-white/10 px-1 rounded">index.html</code> do hlavního adresáře (root) vašeho repozitáře (přes webové rozhraní kliknutím na <em>Add file &gt; Upload files</em>, nebo přes terminál).</li>
+                    <li>V horním menu vašeho repozitáře klikněte na záložku <strong class="text-white">Settings</strong> (Nastavení).</li>
+                    <li>V levém bočním menu vyberte sekci <strong class="text-white">Pages</strong>.</li>
+                    <li>V části <em>Build and deployment</em> pod sekcí <strong>Branch</strong> vyberte větev <code class="text-xs bg-white/10 px-1 rounded">main</code> (případně <code class="text-xs bg-white/10 px-1 rounded">master</code>) a složku <code class="text-xs bg-white/10 px-1 rounded">/ (root)</code>. Klikněte na <strong class="text-white">Save</strong>.</li>
+                    <li>Po chvíli obnovte stránku a GitHub vám nahoře zobrazí živou URL adresu, na které vaše kalkulačka běží!</li>
+                </ol>
+
+                <div class="pt-3 border-t border-white/10 flex justify-end">
+                    <button onclick="toggleModal('githubModal')" class="bg-indigo-600 hover:bg-indigo-500 text-white font-medium px-5 py-2 rounded-xl transition-all shadow-lg shadow-indigo-600/30">Rozumím, zavřít</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <footer class="w-full py-3 px-6 text-center text-xs text-slate-500 glass-panel border-t border-white/5">
+        &copy; 2026 Modern Calc App &bull; Připraveno pro GitHub Pages
+    </footer>
+
+    <script>
+        // State variables
+        let currentInput = '0';
+        let operationExpression = '';
+        let memoryValue = 0;
+        let history = [];
+        let shouldResetScreen = false;
+
+        const mainDisplay = document.getElementById('mainDisplay');
+        const operationHistory = document.getElementById('operationHistory');
+        const memoryIndicator = document.getElementById('memoryIndicator');
+        const historyList = document.getElementById('historyList');
+
+        // Update display UI
+        function updateDisplay() {
+            mainDisplay.innerText = currentInput;
+            operationHistory.innerText = operationExpression;
+            memoryIndicator.innerText = memoryValue;
+        }
+
+        // Number input handler
+        function appendNumber(num) {
+            if (currentInput === '0' || shouldResetScreen) {
+                currentInput = num;
+                shouldResetScreen = false;
+            } else {
+                if (currentInput.length < 15) {
+                    currentInput += num;
+                }
+            }
+            updateDisplay();
+        }
+
+        // Decimal point handler
+        function appendDecimal(dot) {
+            if (shouldResetScreen) {
+                currentInput = '0.';
+                shouldResetScreen = false;
+                updateDisplay();
+                return;
+            }
+            if (!currentInput.includes('.')) {
+                currentInput += dot;
+                updateDisplay();
+            }
+        }
+
+        // Operator handler (+, -, *, /, %)
+        function appendOperator(op) {
+            if (operationExpression !== '' && !shouldResetScreen) {
+                // If there's already an expression, compute intermediate or chain
+                try {
+                    // Safe evaluation check or standard evaluation
+                } catch (e) {}
+            }
+            operationExpression += currentInput + ' ' + op + ' ';
+            shouldResetScreen = true;
+            updateDisplay();
+        }
+
+        // Clear All (AC)
+        function clearAll() {
+            currentInput = '0';
+            operationExpression = '';
+            shouldResetScreen = false;
+            updateDisplay();
+        }
+
+        // Delete last digit
+        function deleteDigit() {
+            if (shouldResetScreen) return;
+            if (currentInput.length > 1) {
+                currentInput = currentInput.slice(0, -1);
+            } else {
+                currentInput = '0';
+            }
+            updateDisplay();
+        }
+
+        // Toggle positive/negative sign
+        function toggleSign() {
+            if (currentInput !== '0') {
+                if (currentInput.startsWith('-')) {
+                    currentInput = currentInput.substring(1);
+                } else {
+                    currentInput = '-' + currentInput;
+                }
+                updateDisplay();
+            }
+        }
+
+        // Calculate Square Root
+        function calculateSquareRoot() {
+            try {
+                let val = parseFloat(currentInput);
+                if (val < 0) {
+                    showStatus("Nelze odmocnit záporné číslo!", true);
+                    return;
+                }
+                let result = Math.sqrt(val);
+                let expr = `√(${currentInput})`;
+                addHistoryItem(expr, result);
+                currentInput = formatResult(result);
+                operationExpression = expr + ' =';
+                shouldResetScreen = true;
+                updateDisplay();
+            } catch (err) {
+                showStatus("Chyba výpočtu", true);
+            }
+        }
+
+        // Calculate Power (x²)
+        function calculatePower() {
+            try {
+                let val = parseFloat(currentInput);
+                let result = Math.pow(val, 2);
+                let expr = `(${currentInput})²`;
+                addHistoryItem(expr, result);
+                currentInput = formatResult(result);
+                operationExpression = expr + ' =';
+                shouldResetScreen = true;
+                updateDisplay();
+            } catch (err) {
+                showStatus("Chyba výpočtu", true);
+            }
+        }
+
+        // Execute Final Result Calculation
+        function calculateResult() {
+            if (operationExpression === '' || shouldResetScreen) return;
+
+            try {
+                let fullExpr = operationExpression + currentInput;
+                // Replace visual operator characters with JS math symbols
+                let sanitizedExpr = fullExpr
+                    .replace(/×/g, '*')
+                    .replace(/÷/g, '/');
+
+                // Evaluate expression securely
+                let result = Function('"use strict";return (' + sanitizedExpr + ')')();
+
+                if (!isFinite(result)) {
+                    throw new Error("Matematická chyba (např. dělení nulou)");
+                }
+
+                let formattedResult = formatResult(result);
+                addHistoryItem(fullExpr, formattedResult);
+
+                operationExpression = fullExpr + ' =';
+                currentInput = formattedResult;
+                shouldResetScreen = true;
+                updateDisplay();
+                showStatus("Výpočet OK");
+            } catch (err) {
+                showStatus("Neplatný výraz", true);
+                operationExpression = '';
+            }
+        }
+
+        // Format result numbers cleanly
+        function formatResult(num) {
+            let res = parseFloat(num);
+            if (isNaN(res)) return '0';
+            // Round to avoid floating point precision glitches
+            return parseFloat(res.toFixed(10)).toString();
+        }
+
+        // Memory functions
+        function memoryClear() {
+            memoryValue = 0;
+            updateDisplay();
+            showStatus("Paměť vymazána");
+        }
+
+        function memoryRecall() {
+            currentInput = memoryValue.toString();
+            shouldResetScreen = true;
+            updateDisplay();
+            showStatus("Načteno z paměti");
+        }
+
+        function memoryAdd() {
+            memoryValue += parseFloat(currentInput) || 0;
+            updateDisplay();
+            showStatus("Přičteno do paměti");
+        }
+
+        function memorySubtract() {
+            memoryValue -= parseFloat(currentInput) || 0;
+            updateDisplay();
+            showStatus("Odečteno z paměti");
+        }
+
+        // History Management
+        function addHistoryItem(expression, result) {
+            history.unshift({ expression, result, time: new Date().toLocaleTimeString() });
+            if (history.length > 20) history.pop();
+            renderHistoryList();
+        }
+
+        function renderHistoryList() {
+            if (history.length === 0) {
+                historyList.innerHTML = '<div class="text-center text-slate-500 text-xs py-8">Zatím žádná historie výpočtů.</div>';
+                return;
+            }
+            let html = '';
+            history.forEach((item, index) => {
+                html += `
+                    <div class="bg-white/5 border border-white/10 rounded-xl p-3 flex flex-col space-y-1 hover:bg-white/10 transition-all cursor-pointer" onclick="loadHistoryItem(${index})">
+                        <div class="flex justify-between items-center text-[10px] text-slate-400">
+                            <span>${item.time}</span>
+                            <span class="text-indigo-400 font-mono">kliknutím načíst</span>
+                        </div>
+                        <div class="text-xs text-slate-300 font-mono">${item.expression}</div>
+                        <div class="text-sm font-bold text-white font-mono">= ${item.result}</div>
+                    </div>
+                `;
+            });
+            historyList.innerHTML = html;
+        }
+
+        function loadHistoryItem(index) {
+            let item = history[index];
+            currentInput = item.result.toString();
+            operationExpression = item.expression + ' =';
+            shouldResetScreen = true;
+            updateDisplay();
+            toggleHistory();
+        }
+
+        function clearHistory() {
+            history = [];
+            renderHistoryList();
+        }
+
+        // Toggle History Drawer
+        function toggleHistory() {
+            const drawer = document.getElementById('historyDrawer');
+            drawer.classList.toggle('translate-x-full');
+        }
+
+        // Toggle Modals
+        function toggleModal(modalId) {
+            const modal = document.getElementById(modalId);
+            modal.classList.toggle('hidden');
+        }
+
+        // Status messages helper
+        function showStatus(msg, isError = false) {
+            const statusIndicator = document.getElementById('statusIndicator');
+            statusIndicator.innerText = msg;
+            statusIndicator.className = isError ? 'text-rose-400 font-medium' : 'text-emerald-400 font-medium';
+            setTimeout(() => {
+                statusIndicator.innerText = 'Připraveno';
+                statusIndicator.className = 'text-emerald-400';
+            }, 3000);
+        }
+
+        // Keyboard Support
+        window.addEventListener('keydown', (e) => {
+            if ((e.key >= '0' && e.key <= '9')) {
+                appendNumber(e.key);
+            } else if (e.key === '.') {
+                appendDecimal('.');
+            } else if (e.key === '+') {
+                appendOperator('+');
+            } else if (e.key === '-') {
+                appendOperator('-');
+            } else if (e.key === '*') {
+                appendOperator('*');
+            } else if (e.key === '/') {
+                e.preventDefault();
+                appendOperator('/');
+            } else if (e.key === 'Enter' || e.key === '=') {
+                e.preventDefault();
+                calculateResult();
+            } else if (e.key === 'Backspace') {
+                deleteDigit();
+            } else if (e.key === 'Escape') {
+                clearAll();
+            }
+        });
+    </script>
+</body>
+</html>
